@@ -1,9 +1,10 @@
 using AzureNamingTool.Models;
-using AzureNamingTool.Pages;
+using AzureNamingTool.Components.Pages;
 using AzureNamingTool.Services;
-using AzureNamingTool.Shared;
+using AzureNamingTool.Components;
 using Blazored.Modal;
 using Blazored.Modal.Services;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -121,27 +122,65 @@ namespace AzureNamingTool.Helpers
 
         public static bool IsNotNull([NotNullWhen(true)] object? obj) => obj != null;
 
-        public static string FormatResoureType(string type)
+        public static string[] FormatResoureType(string type)
         {
+            String[] returntype = new String[4];
+            returntype[0] = type;
+            // Make sure it is a full resource type name
+            if (type.Contains('('))
+            {
+                returntype[0] = type[..type.IndexOf("(")].Trim();
+            }
             try
             {
-                // trim any details out of the value
-                if (type.Contains("-"))
+                if ((GeneralHelper.IsNotNull(type)) && (GeneralHelper.IsNotNull(returntype[0])))
                 {
-                    type = type.Substring(0, type.IndexOf("-")).Trim();
-                }
+                    // trim any details out of the value
+                    // Get the base resource type name
+                    if (returntype[0].Contains(" -"))
+                    {
+                        // Get all text before the dash
+                        returntype[1] = returntype[0][..returntype[0].IndexOf(" -")].Trim();
+                        // Get all text after the dash
+                        returntype[3] = returntype[0].Substring(returntype[0].IndexOf("-") + 1).Trim();
+                    }
 
-                // trim any details out of the value
-                if (type.Contains("("))
-                {
-                    type = type.Substring(0, type.IndexOf("(")).Trim();
+                    // trim any details out of the value
+                    if (type.Contains('(') && type.Contains(')'))
+                    {
+                        {
+                            int intstart = type.IndexOf("(") + 1;
+                            returntype[2] = String.Concat(type[intstart..].TakeWhile(x => x != ')'));
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
                 AdminLogService.PostItem(new AdminLogMessage() { Title = "ERROR", Message = ex.Message });
             }
-            return type;
+            return returntype;
+        }
+
+        public static string GenerateRandomString(int maxLength, bool alphanumeric)
+        {
+            var chars = "abcdefghijklmnopqrstuvwxyz";
+            if (alphanumeric)
+            {
+                chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+            }
+
+            var Charsarr = new char[maxLength];
+            var random = new Random();
+
+            for (int i = 0; i < Charsarr.Length; i++)
+            {
+                Charsarr[i] = chars[random.Next(chars.Length)];
+            }
+
+            var result = new String(Charsarr);
+
+            return result;
         }
     }
 }
